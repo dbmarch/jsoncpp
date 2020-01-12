@@ -51,3 +51,6 @@ jsoncpp_lib_static.dir/
 
 # DS_Store
 .DS_Store
+
+DartConfiguration.tcl
+version
