@@ -13,6 +13,7 @@
 #include <cmath>
 #include <cstddef>
 #include <cstring>
+#include <iostream>
 #include <sstream>
 #include <utility>
 
@@ -200,8 +201,8 @@ namespace Json {
 
 #if JSON_USE_EXCEPTION
 Exception::Exception(String msg) : msg_(std::move(msg)) {}
-Exception::~Exception() JSONCPP_NOEXCEPT = default;
-char const* Exception::what() const JSONCPP_NOEXCEPT { return msg_.c_str(); }
+Exception::~Exception() noexcept = default;
+char const* Exception::what() const noexcept { return msg_.c_str(); }
 RuntimeError::RuntimeError(String const& msg) : Exception(msg) {}
 LogicError::LogicError(String const& msg) : Exception(msg) {}
 JSONCPP_NORETURN void throwRuntimeError(String const& msg) {
@@ -211,8 +212,14 @@ JSONCPP_NORETURN void throwLogicError(String const& msg) {
   throw LogicError(msg);
 }
 #else // !JSON_USE_EXCEPTION
-JSONCPP_NORETURN void throwRuntimeError(String const& msg) { abort(); }
-JSONCPP_NORETURN void throwLogicError(String const& msg) { abort(); }
+JSONCPP_NORETURN void throwRuntimeError(String const& msg) {
+  std::cerr << msg << std::endl;
+  abort();
+}
+JSONCPP_NORETURN void throwLogicError(String const& msg) {
+  std::cerr << msg << std::endl;
+  abort();
+}
 #endif
 
 // //////////////////////////////////////////////////////////////////
@@ -252,7 +259,7 @@ Value::CZString::CZString(const CZString& other) {
   storage_.length_ = other.storage_.length_;
 }
 
-Value::CZString::CZString(CZString&& other)
+Value::CZString::CZString(CZString&& other) noexcept
     : cstr_(other.cstr_), index_(other.index_) {
   other.cstr_ = nullptr;
 }
@@ -278,7 +285,7 @@ Value::CZString& Value::CZString::operator=(const CZString& other) {
   return *this;
 }
 
-Value::CZString& Value::CZString::operator=(CZString&& other) {
+Value::CZString& Value::CZString::operator=(CZString&& other) noexcept {
   cstr_ = other.cstr_;
   index_ = other.index_;
   other.cstr_ = nullptr;
@@ -426,7 +433,7 @@ Value::Value(const Value& other) {
   dupMeta(other);
 }
 
-Value::Value(Value&& other) {
+Value::Value(Value&& other) noexcept {
   initBasic(nullValue);
   swap(other);
 }
@@ -441,7 +448,7 @@ Value& Value::operator=(const Value& other) {
   return *this;
 }
 
-Value& Value::operator=(Value&& other) {
+Value& Value::operator=(Value&& other) noexcept {
   other.swap(*this);
   return *this;
 }
@@ -875,8 +882,7 @@ ArrayIndex Value::size() const {
 bool Value::empty() const {
   if (isNull() || isArray() || isObject())
     return size() == 0U;
-  else
-    return false;
+  return false;
 }
 
 Value::operator bool() const { return !isNull(); }
@@ -1137,13 +1143,12 @@ bool Value::insert(ArrayIndex index, Value&& newValue) {
   ArrayIndex length = size();
   if (index > length) {
     return false;
-  } else {
-    for (ArrayIndex i = length; i > index; i--) {
-      (*this)[i] = std::move((*this)[i - 1]);
-    }
-    (*this)[index] = std::move(newValue);
-    return true;
   }
+  for (ArrayIndex i = length; i > index; i--) {
+    (*this)[i] = std::move((*this)[i - 1]);
+  }
+  (*this)[index] = std::move(newValue);
+  return true;
 }
 
 Value Value::get(char const* begin, char const* end,
@@ -1368,14 +1373,15 @@ bool Value::isObject() const { return type() == objectValue; }
 Value::Comments::Comments(const Comments& that)
     : ptr_{cloneUnique(that.ptr_)} {}
 
-Value::Comments::Comments(Comments&& that) : ptr_{std::move(that.ptr_)} {}
+Value::Comments::Comments(Comments&& that) noexcept
+    : ptr_{std::move(that.ptr_)} {}
 
 Value::Comments& Value::Comments::operator=(const Comments& that) {
   ptr_ = cloneUnique(that.ptr_);
   return *this;
 }
 
-Value::Comments& Value::Comments::operator=(Comments&& that) {
+Value::Comments& Value::Comments::operator=(Comments&& that) noexcept {
   ptr_ = std::move(that.ptr_);
   return *this;
 }

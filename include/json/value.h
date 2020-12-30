@@ -21,6 +21,24 @@
 #endif
 #endif
 
+// Support for '= delete' with template declarations was a late addition
+// to the c++11 standard and is rejected by clang 3.8 and Apple clang 8.2
+// even though these declare themselves to be c++11 compilers.
+#if !defined(JSONCPP_TEMPLATE_DELETE)
+#if defined(__clang__) && defined(__apple_build_version__)
+#if __apple_build_version__ <= 8000042
+#define JSONCPP_TEMPLATE_DELETE
+#endif
+#elif defined(__clang__)
+#if __clang_major__ == 3 && __clang_minor__ <= 8
+#define JSONCPP_TEMPLATE_DELETE
+#endif
+#endif
+#if !defined(JSONCPP_TEMPLATE_DELETE)
+#define JSONCPP_TEMPLATE_DELETE = delete
+#endif
+#endif
+
 #include <array>
 #include <exception>
 #include <map>
@@ -49,8 +67,8 @@ namespace Json {
 class JSON_API Exception : public std::exception {
 public:
   Exception(String msg);
-  ~Exception() JSONCPP_NOEXCEPT override;
-  char const* what() const JSONCPP_NOEXCEPT override;
+  ~Exception() noexcept override;
+  char const* what() const noexcept override;
 
 protected:
   String msg_;
@@ -245,10 +263,10 @@ private:
     CZString(ArrayIndex index);
     CZString(char const* str, unsigned length, DuplicationPolicy allocate);
     CZString(CZString const& other);
-    CZString(CZString&& other);
+    CZString(CZString&& other) noexcept;
     ~CZString();
     CZString& operator=(const CZString& other);
-    CZString& operator=(CZString&& other);
+    CZString& operator=(CZString&& other) noexcept;
 
     bool operator<(CZString const& other) const;
     bool operator==(CZString const& other) const;
@@ -324,14 +342,15 @@ public:
   Value(const StaticString& value);
   Value(const String& value);
   Value(bool value);
+  Value(std::nullptr_t ptr) = delete;
   Value(const Value& other);
-  Value(Value&& other);
+  Value(Value&& other) noexcept;
   ~Value();
 
   /// \note Overwrite existing comments. To preserve comments, use
   /// #swapPayload().
   Value& operator=(const Value& other);
-  Value& operator=(Value&& other);
+  Value& operator=(Value&& other) noexcept;
 
   /// Swap everything.
   void swap(Value& other);
@@ -390,8 +409,8 @@ public:
   bool isObject() const;
 
   /// The `as<T>` and `is<T>` member function templates and specializations.
-  template <typename T> T as() const = delete;
-  template <typename T> bool is() const = delete;
+  template <typename T> T as() const JSONCPP_TEMPLATE_DELETE;
+  template <typename T> bool is() const JSONCPP_TEMPLATE_DELETE;
 
   bool isConvertibleTo(ValueType other) const;
 
@@ -403,7 +422,7 @@ public:
   bool empty() const;
 
   /// Return !isNull()
-  JSONCPP_OP_EXPLICIT operator bool() const;
+  explicit operator bool() const;
 
   /// Remove all object members and array elements.
   /// \pre type() is arrayValue, objectValue, or nullValue
@@ -616,9 +635,9 @@ private:
   public:
     Comments() = default;
     Comments(const Comments& that);
-    Comments(Comments&& that);
+    Comments(Comments&& that) noexcept;
     Comments& operator=(const Comments& that);
-    Comments& operator=(Comments&& that);
+    Comments& operator=(Comments&& that) noexcept;
     bool has(CommentPlacement slot) const;
     String get(CommentPlacement slot) const;
     void set(CommentPlacement slot, String comment);

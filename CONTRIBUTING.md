@@ -19,7 +19,7 @@ If you wish to install to a directory other than /usr/local, set an environment 
     DESTDIR=/path/to/install/dir
 
 Then,
-
+```sh
     cd jsoncpp/
     BUILD_TYPE=debug
     #BUILD_TYPE=release
@@ -27,9 +27,15 @@ Then,
     #LIB_TYPE=static
     meson --buildtype ${BUILD_TYPE} --default-library ${LIB_TYPE} . build-${LIB_TYPE}
     ninja -v -C build-${LIB_TYPE}
-    cd build-${LIB_TYPE}
-    meson test --no-rebuild --print-errorlogs
+
+    ninja -C build-static/ test
+
+    # Or
+    #cd build-${LIB_TYPE}
+    #meson test --no-rebuild --print-errorlogs
+
     sudo ninja install
+```
 
 ## Building and testing with other build systems
 See https://github.com/open-source-parsers/jsoncpp/wiki/Building
@@ -138,7 +144,9 @@ bool Reader::decodeNumber(Token& token) {
 ```
 
 Before submitting your code, ensure that you meet the versioning requirements above, follow the style guide of the file you are modifying (or the above rules for new files), and run clang format. Meson exposes clang format with the following command:
-
 ```
 ninja -v -C build-${LIB_TYPE}/ clang-format
 ```
+
+For convenience, you can also run the `reformat.sh` script located in the root directory.
+
